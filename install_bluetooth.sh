@@ -163,6 +163,18 @@ sudo patch /etc/pulse/system.pa << EOT
 EOT
 
 
+
+sudo patch /etc/pulse/system.pa << EOT
+***************
+*** 4,5 ****
+deb http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
+deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
+EOT
+
+
+
+
+
 #sudo service bluetooth start &
 #sudo service pulseaudio start &
 #sudo service bluetooth-agent start &
