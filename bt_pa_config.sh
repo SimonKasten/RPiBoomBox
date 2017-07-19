@@ -1,3 +1,5 @@
+
+
 #!/bin/bash
 
 #The bluetooth device can appear as a number of things.
@@ -27,45 +29,64 @@ function tst {
 #--------------------------------------------------------------------
 
 
+apt-get update -y
+apt-get upgrade -y
+
+# Install Pulse Audio & Bluez
+apt-get install bluez pulseaudio pulseaudio-module-bluetooth -y
+# Install dbus for python
+apt-get install python-dbus -y
+# Install espeak
+apt-get install -qy espeak
+
+# Create users and priviliges for Bluez-Pulse Audio interaction - most should already exist
+addgroup --system pulse
+adduser --system --ingroup pulse --home /var/run/pulse pulse
+addgroup --system pulse-access
+adduser pulse audio
+adduser root pulse-access
+adduser pulse lp
+
+read -p "Bluetooth device name: " BT_NAME
 
 mkdir /home/pi/pyScripts
-tst cp usr/local/bin/volume-watcher.py /usr/local/bin/volume-watcher.py
-tst chmod +x /usr/local/bin/volume-watcher.py
-tst cp lib/systemd/system/volume-watcher.service /lib/systemd/system/volume-watcher.service
-tst systemctl enable volume-watcher
-tst cd `dirname $0`
+cp usr/local/bin/volume-watcher.py /usr/local/bin/volume-watcher.py
+chmod +x /usr/local/bin/volume-watcher.py
+cp lib/systemd/system/volume-watcher.service /lib/systemd/system/volume-watcher.service
+systemctl enable volume-watcher
+cd `dirname $0`
 
 echo "PRETTY_HOSTNAME=$BT_NAME" >> /tmp/machine-info
-tst sudo cp /tmp/machine-info /etc
+sudo cp /tmp/machine-info /etc
 
-tst sudo cp init.d/pulseaudio /etc/init.d
-tst sudo chmod +x /etc/init.d/pulseaudio
-tst sudo update-rc.d pulseaudio defaults
+sudo cp init.d/pulseaudio /etc/init.d
+sudo chmod +x /etc/init.d/pulseaudio
+sudo update-rc.d pulseaudio defaults
 
-tst sudo cp init.d/bluetooth /etc/init.d
-tst sudo chmod +x /etc/init.d/bluetooth
-tst sudo update-rc.d bluetooth defaults
+sudo cp init.d/bluetooth /etc/init.d
+sudo chmod +x /etc/init.d/bluetooth
+sudo update-rc.d bluetooth defaults
 
-tst sudo cp init.d/bluetooth-agent /etc/init.d
-tst sudo chmod +x /etc/init.d/bluetooth-agent
-tst sudo update-rc.d bluetooth-agent defaults
+sudo cp init.d/bluetooth-agent /etc/init.d
+sudo chmod +x /etc/init.d/bluetooth-agent
+sudo update-rc.d bluetooth-agent defaults
 
-tst sudo cp usr/local/bin/bluez-udev /usr/local/bin
-tst sudo chmod 755 /usr/local/bin/bluez-udev
+sudo cp usr/local/bin/bluez-udev /usr/local/bin
+sudo chmod 755 /usr/local/bin/bluez-udev
 
-tst sudo cp usr/local/bin/simple-agent.autotrust /usr/local/bin
-tst sudo chmod 755 /usr/local/bin/simple-agent.autotrust
+sudo cp usr/local/bin/simple-agent.autotrust /usr/local/bin
+sudo chmod 755 /usr/local/bin/simple-agent.autotrust
 
-tst sudo cp usr/local/bin/say.sh /usr/local/bin
-tst sudo chmod 755 /usr/local/bin/say.sh
+sudo cp usr/local/bin/say.sh /usr/local/bin
+sudo chmod 755 /usr/local/bin/say.sh
 
-tst sudo cp usr/local/bin/bluezutils.py /usr/local/bin
+sudo cp usr/local/bin/bluezutils.py /usr/local/bin
 
-tst sudo cp etc/pulse/daemon.conf /etc/pulse
+sudo cp etc/pulse/daemon.conf /etc/pulse
 
 sudo patch /boot/config.txt << EOT
 @@ -54,3 +54,6 @@
- 
+
  # Enable audio (loads snd_bcm2835)
  dtparam=audio=on
 +
@@ -85,8 +106,8 @@ EOT
 
 else
 
-tst sudo touch /etc/udev/rules.d/99-com.rules
-tst sudo chmod 666 /etc/udev/rules.d/99-com.rules
+sudo touch /etc/udev/rules.d/99-com.rules
+sudo chmod 666 /etc/udev/rules.d/99-com.rules
 sudo cat  << EOT > /etc/udev/rules.d/99-input.rules
 SUBSYSTEM=="input", GROUP="input", MODE="0660"
 KERNEL=="input[0-9]*", RUN+="/usr/local/bin/bluez-udev"
@@ -149,11 +170,11 @@ EOT
 mkdir /etc/pulsebackup
 cp /etc/pulse/* /etc/pulsebackup/
 git clone --branch v6.0 https://github.com/pulseaudio/pulseaudio
-apt-get install intltool
-apt-get install libsndfile-dev
-apt-get install libcap-dev
-apt-get install libjson0-dev
-cd pulseaudio
+apt-get install intltool -y
+apt-get install libsndfile-dev -y
+apt-get install libcap-dev -y
+apt-get install libjson0-dev -y
+cd /home/pi/pulseaudio
 ./bootstrap.sh
 make
 make install
