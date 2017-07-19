@@ -29,6 +29,16 @@ function tst {
 #--------------------------------------------------------------------
 
 
+
+sudo patch /etc/apt/sources.list << EOT
+***************
+*** 6,7 ****
+deb http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
+deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
+EOT
+
+
+
 apt-get update -y
 apt-get upgrade -y
 
@@ -161,18 +171,6 @@ sudo patch /etc/pulse/system.pa << EOT
 +     load-module module-bluetooth-discover
 + .endif
 EOT
-
-
-
-sudo patch /etc/pulse/system.pa << EOT
-***************
-*** 4,5 ****
-deb http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
-deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
-EOT
-
-
-
 
 
 #sudo service bluetooth start &
