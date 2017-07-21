@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 
 #The bluetooth device can appear as a number of things.
