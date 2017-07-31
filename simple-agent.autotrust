@@ -1,0 +1,366 @@
+#!/usr/bin/python
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+from optparse import OptionParser
+import sys
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+try:
+  from gi.repository import GObject
+except ImportError:
+  import gobject as GObject
+import bluezutils
+
+
+#import
+import RPi.GPIO as GPIO
+import time
+
+
+
+BUS_NAME = 'org.bluez'
+AGENT_INTERFACE = 'org.bluez.Agent1'
+AGENT_PATH = "/test/agent"
+
+bus = None
+device_obj = None
+dev_path = None
+ 
+
+### ###GPIO.setwarnings(False);
+ 
+# Define GPIO to LCD mapping
+LCD_RS = 12
+LCD_E  = 7
+LCD_D4 = 18
+LCD_D5 = 8
+LCD_D6 = 23
+LCD_D7 = 25
+ 
+# Define some device constants
+LCD_WIDTH = 20    # Maximum characters per line
+LCD_CHR = True
+LCD_CMD = False
+ 
+LCD_LINE_1 = 0x80 # LCD RAM address for the 1st line
+LCD_LINE_2 = 0xC0 # LCD RAM address for the 2nd line
+LCD_LINE_3 = 0x94 # LCD RAM address for the 3rd line
+LCD_LINE_4 = 0xD4 # LCD RAM address for the 4th line
+ 
+# Timing constants
+E_PULSE = 0.0005
+E_DELAY = 0.0005
+
+
+
+def ask(prompt):
+	try:
+		return raw_input(prompt)
+	except:
+		return input(prompt)
+
+def set_trusted(path):
+	props = dbus.Interface(bus.get_object("org.bluez", path),
+					"org.freedesktop.DBus.Properties")
+	props.Set("org.bluez.Device1", "Trusted", True)
+
+def dev_connect(path):
+	dev = dbus.Interface(bus.get_object("org.bluez", path),
+							"org.bluez.Device1")
+	dev.Connect()
+
+class Rejected(dbus.DBusException):
+	_dbus_error_name = "org.bluez.Error.Rejected"
+
+class Agent(dbus.service.Object):
+	exit_on_release = True
+
+	def set_exit_on_release(self, exit_on_release):
+		self.exit_on_release = exit_on_release
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="", out_signature="")
+	def Release(self):
+		print("Release")
+		if self.exit_on_release:
+			mainloop.quit()
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="os", out_signature="")
+	def AuthorizeService(self, device, uuid):
+		print("AuthorizeService (%s, %s)" % (device, uuid))
+		authorize = "yes"
+		if (authorize == "yes"):
+			return
+		raise Rejected("Connection rejected by user")
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="o", out_signature="s")
+	def RequestPinCode(self, device):
+		print("RequestPinCode (%s)" % (device))
+		lcd_string("RequestPinCode",LCD_LINE_2,2)
+		set_trusted(device)
+		return "0000"
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="o", out_signature="u")
+	def RequestPasskey(self, device):
+		print("RequestPasskey (%s)" % (device))
+		lcd_string("RequestPasskey",LCD_LINE_3,2)
+		set_trusted(device)
+		passkey = ask("Enter passkey: ")
+		return dbus.UInt32(passkey)
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="ouq", out_signature="")
+	def DisplayPasskey(self, device, passkey, entered):
+		print("DisplayPasskey (%s, %06u entered %u)" %
+						(device, passkey, entered))
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="os", out_signature="")
+	def DisplayPinCode(self, device, pincode):
+		print("DisplayPinCode (%s, %s)" % (device, pincode))
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="ou", out_signature="")
+	def RequestConfirmation(self, device, passkey):
+		print("RequestConfirmation (%s, %06d)" % (device, passkey))
+		#confirm = ask("Confirm passkey (yes/no): ")
+		#if (confirm == "yes"):
+		#	set_trusted(device)
+		#	return
+		#raise Rejected("Passkey doesn't match")
+		set_trusted(device)
+		lcd_string("RequestConfirmation",LCD_LINE_4,2)
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="o", out_signature="")
+	def RequestAuthorization(self, device):
+		print("RequestAuthorization (%s)" % (device))
+		auth = "yes"
+		if (auth == "yes"):
+			return
+		raise Rejected("Pairing rejected")
+
+	@dbus.service.method(AGENT_INTERFACE,
+					in_signature="", out_signature="")
+	def Cancel(self):
+		print("Cancel")
+
+def pair_reply():
+	print("Device paired")
+	set_trusted(dev_path)
+	dev_connect(dev_path)
+	mainloop.quit()
+
+def pair_error(error):
+	err_name = error.get_dbus_name()
+	if err_name == "org.freedesktop.DBus.Error.NoReply" and device_obj:
+		print("Timed out. Cancelling pairing")
+		device_obj.CancelPairing()
+	else:
+		print("Creating device failed: %s" % (error))
+
+
+	mainloop.quit()
+
+##LCDLCDLCDLCD
+	
+def lcd_init():
+  # Initialise display
+  lcd_byte(0x33,LCD_CMD) # 110011 Initialise
+  lcd_byte(0x32,LCD_CMD) # 110010 Initialise
+  lcd_byte(0x06,LCD_CMD) # 000110 Cursor move direction
+  lcd_byte(0x0C,LCD_CMD) # 001100 Display On,Cursor Off, Blink Off
+  lcd_byte(0x28,LCD_CMD) # 101000 Data length, number of lines, font size
+  lcd_byte(0x01,LCD_CMD) # 000001 Clear display
+  time.sleep(E_DELAY)
+ 
+def lcd_byte(bits, mode):
+  # Send byte to data pins
+  # bits = data
+  # mode = True  for character  #        False for command
+ 
+  GPIO.output(LCD_RS, mode) # RS
+ 
+  # High bits
+  GPIO.output(LCD_D4, False)
+  GPIO.output(LCD_D5, False)
+  GPIO.output(LCD_D6, False)
+  GPIO.output(LCD_D7, False)
+  if bits&0x10==0x10:
+    GPIO.output(LCD_D4, True)
+  if bits&0x20==0x20:
+    GPIO.output(LCD_D5, True)
+  if bits&0x40==0x40:
+    GPIO.output(LCD_D6, True)
+  if bits&0x80==0x80:
+    GPIO.output(LCD_D7, True)
+ 
+  # Toggle 'Enable' pin
+  lcd_toggle_enable()
+ 
+  # Low bits
+  GPIO.output(LCD_D4, False)
+  GPIO.output(LCD_D5, False)
+  GPIO.output(LCD_D6, False)
+  GPIO.output(LCD_D7, False)
+  if bits&0x01==0x01:
+    GPIO.output(LCD_D4, True)
+  if bits&0x02==0x02:
+    GPIO.output(LCD_D5, True)
+  if bits&0x04==0x04:
+    GPIO.output(LCD_D6, True)
+  if bits&0x08==0x08:
+    GPIO.output(LCD_D7, True)
+ 
+  # Toggle 'Enable' pin
+  lcd_toggle_enable()
+ 
+def lcd_toggle_enable():
+  # Toggle enable
+  time.sleep(E_DELAY)
+  GPIO.output(LCD_E, True)
+  time.sleep(E_PULSE)
+  GPIO.output(LCD_E, False)
+  time.sleep(E_DELAY)
+ 
+def lcd_string(message,line,style):
+  # Send string to display
+  # style=1 Left justified
+  # style=2 Centred
+  # style=3 Right justified
+ 
+  if style==1:
+    message = message.ljust(LCD_WIDTH," ")
+  elif style==2:
+    message = message.center(LCD_WIDTH," ")
+  elif style==3:
+    message = message.rjust(LCD_WIDTH," ")
+ 
+  lcd_byte(line, LCD_CMD)
+ 
+  for i in range(LCD_WIDTH):
+    lcd_byte(ord(message[i]),LCD_CHR)
+ 
+
+
+
+
+
+if __name__ == '__main__':
+
+  # Main program block
+       
+  GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
+  GPIO.setup(LCD_E, GPIO.OUT)  # E
+  GPIO.setup(LCD_RS, GPIO.OUT) # RS
+  GPIO.setup(LCD_D4, GPIO.OUT) # DB4
+  GPIO.setup(LCD_D5, GPIO.OUT) # DB5
+  GPIO.setup(LCD_D6, GPIO.OUT) # DB6
+  GPIO.setup(LCD_D7, GPIO.OUT) # DB7
+       
+  # Initialise display
+  lcd_init()
+
+  # Blank display
+  lcd_byte(0x01, LCD_CMD)
+
+  dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+  bus = dbus.SystemBus()
+
+  capability = "NoInputNoOutput"
+
+  parser = OptionParser()
+  parser.add_option("-i", "--adapter", action="store",
+          type="string",
+          dest="adapter_pattern",
+          default=None)
+  parser.add_option("-c", "--capability", action="store",
+          type="string", dest="capability")
+  parser.add_option("-t", "--timeout", action="store",
+          type="int", dest="timeout",
+          default=60000)
+  (options, args) = parser.parse_args()
+  if options.capability:
+    capability  = options.capability
+
+  path = "/test/agent"
+  agent = Agent(bus, path)
+
+  mainloop = GObject.MainLoop()
+
+  obj = bus.get_object(BUS_NAME, "/org/bluez");
+  manager = dbus.Interface(obj, "org.bluez.AgentManager1")
+  manager.RegisterAgent(path, capability)
+
+  print("Agent registered")
+  lcd_string("Agent registered",LCD_LINE_1,2)
+
+  # Fix-up old style invocation (BlueZ 4)
+  if len(args) > 0 and args[0].startswith("hci"):
+    options.adapter_pattern = args[0]
+    del args[:1]
+
+  if len(args) > 0:
+    device = bluezutils.find_device(args[0],
+            options.adapter_pattern)
+    dev_path = device.object_path
+    agent.set_exit_on_release(False)
+    device.Pair(reply_handler=pair_reply, error_handler=pair_error,
+                timeout=60000)
+    device_obj = device
+  else:
+    manager.RequestDefaultAgent(path)
+
+  mainloop.run()
+
+  #adapter.UnregisterAgent(path)
+  #print("Agent unregistered")
+
+
+
+
+
+
+	
+#--------------------------------------
+#    ___  ___  _ ____
+#   / _ \/ _ \(_) __/__  __ __
+#  / , _/ ___/ /\ \/ _ \/ // /
+# /_/|_/_/  /_/___/ .__/\_, /
+#                /_/   /___/
+#
+#  lcd_16x2.py
+#  20x4 LCD Test Script with
+#  backlight control and text justification
+#
+# Author : Matt Hawkins
+# Date   : 06/04/2015
+#
+# http://www.raspberrypi-spy.co.uk/
+#
+#--------------------------------------
+ 
+# The wiring for the LCD is as follows:
+# 1 : GND
+# 2 : 5V
+# 3 : Contrast (0-5V)*
+# 4 : RS (Register Select)
+# 5 : R/W (Read Write)       - GROUND THIS PIN
+# 6 : Enable or Strobe
+# 7 : Data Bit 0             - NOT USED
+# 8 : Data Bit 1             - NOT USED
+# 9 : Data Bit 2             - NOT USED
+# 10: Data Bit 3             - NOT USED
+# 11: Data Bit 4
+# 12: Data Bit 5
+# 13: Data Bit 6
+# 14: Data Bit 7
+# 15: LCD Backlight +5V**
+# 16: LCD Backlight GND
+
