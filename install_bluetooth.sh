@@ -55,8 +55,6 @@ adduser pulse audio
 adduser root pulse-access
 adduser pulse lp
 
-read -p "Bluetooth device name: " BT_NAME
-
 mkdir /home/pi/pyScripts
 cp usr/local/bin/volume-watcher.py /usr/local/bin/volume-watcher.py
 chmod +x /usr/local/bin/volume-watcher.py
@@ -177,7 +175,8 @@ EOT
 # BT FIX
 mkdir /etc/pulsebackup
 cp /etc/pulse/* /etc/pulsebackup/
-git clone --branch v6.0 https://github.com/pulseaudio/pulseaudio
+cd ~
+git clone https://github.com/pulseaudio/pulseaudio
 apt-get install intltool -y
 apt-get install libsndfile-dev -y
 apt-get install libcap-dev -y
