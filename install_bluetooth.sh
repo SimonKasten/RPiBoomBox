@@ -35,13 +35,18 @@ deb http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
 deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
 EOT
 
-
-
 apt-get update -y
 apt-get upgrade -y
 
-# Install Pulse Audio & Bluez
-apt-get install bluez pulseaudio pulseaudio-module-bluetooth -y
+
+apt-get install pulseaudio=7.1-2~bpo8+1 pulseaudio-utils=7.1-2~bpo8+1 \
+    pulseaudio-module-x11=7.1-2~bpo8+1 pulseaudio-module-bluetooth=7.1-2~bpo8+1 \
+    libpulse-mainloop-glib0=7.1-2~bpo8+1 libpulsedsp=7.1-2~bpo8+1 libpulse0=7.1-2~bpo8+1 \
+    libpulse0:i386=7.1-2~bpo8+1 -y
+
+
+### Install Pulse Audio & Bluez
+###apt-get install bluez pulseaudio pulseaudio-module-bluetooth -y
 # Install dbus for python
 apt-get install python-dbus -y
 # Install espeak
@@ -169,24 +174,21 @@ sudo patch /etc/pulse/system.pa << EOT
 EOT
 
 
-#sudo service bluetooth start &
-#sudo service pulseaudio start &
-#sudo service bluetooth-agent start &
-# BT FIX
-mkdir /etc/pulsebackup
-cp /etc/pulse/* /etc/pulsebackup/
-cd ~
-git clone https://github.com/pulseaudio/pulseaudio
-apt-get install intltool -y
-apt-get install libsndfile-dev -y
-apt-get install libcap-dev -y
-apt-get install libjson0-dev -y
-cd /home/pi/pulseaudio
-./bootstrap.sh
-make
-make install
-ldconfig
-cp /etc/pulsebackup/* /etc/pulse
+### BT FIX
+##mkdir /etc/pulsebackup
+##cp /etc/pulse/* /etc/pulsebackup/
+##cd ~
+##git clone https://github.com/pulseaudio/pulseaudio
+##apt-get install intltool -y
+##apt-get install libsndfile-dev -y
+##apt-get install libcap-dev -y
+##apt-get install libjson0-dev -y
+##cd /home/pi/RPiBoomBox/pulseaudio
+##./bootstrap.sh
+##make
+##make install
+##ldconfig
+##cp /etc/pulsebackup/* /etc/pulse
 
 sleep 5
 
