@@ -28,16 +28,15 @@ function tst {
 
 
 
-sudo patch /etc/apt/sources.list << EOT
-***************
-*** 6,7 ****
-deb http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
-deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free
-EOT
 
-apt-get update -y
+echo "#Pulseaudio Install" >> /etc/apt/sources.list 
+echo "deb http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free" >> /etc/apt/sources.list 
+echo "deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non-free" >> /etc/apt/sources.list 
+
+
+apt-get update
 apt-get upgrade -y
-
+apt-get dist-upgrade -y
 
 apt-get install pulseaudio=7.1-2~bpo8+1 pulseaudio-utils=7.1-2~bpo8+1 \
     pulseaudio-module-x11=7.1-2~bpo8+1 pulseaudio-module-bluetooth=7.1-2~bpo8+1 \
