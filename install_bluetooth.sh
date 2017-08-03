@@ -35,13 +35,16 @@ echo "deb-src http://ftp.jp.debian.org/debian/ jessie-backports main contrib non
 
 
 apt-get update
-apt-get upgrade -y
 apt-get dist-upgrade -y
+
 
 apt-get install pulseaudio=7.1-2~bpo8+1 pulseaudio-utils=7.1-2~bpo8+1 \
     pulseaudio-module-x11=7.1-2~bpo8+1 pulseaudio-module-bluetooth=7.1-2~bpo8+1 \
     libpulse-mainloop-glib0=7.1-2~bpo8+1 libpulsedsp=7.1-2~bpo8+1 libpulse0=7.1-2~bpo8+1 \
-    libpulse0:i386=7.1-2~bpo8+1 -y
+
+apt-get install pavumeter pavucontrol paman paprefs
+
+
 
 
 ### Install Pulse Audio & Bluez
