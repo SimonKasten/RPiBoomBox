@@ -41,8 +41,7 @@ apt-get dist-upgrade -y
 apt-get install pulseaudio=7.1-2~bpo8+1 pulseaudio-utils=7.1-2~bpo8+1 \
     pulseaudio-module-x11=7.1-2~bpo8+1 pulseaudio-module-bluetooth=7.1-2~bpo8+1 \
     libpulse-mainloop-glib0=7.1-2~bpo8+1 libpulsedsp=7.1-2~bpo8+1 libpulse0=7.1-2~bpo8+1 \
-
-apt-get install pavumeter pavucontrol paman paprefs
+    pavumeter pavucontrol paman 
 
 
 
