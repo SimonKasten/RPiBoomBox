@@ -51,7 +51,7 @@ apt-get install pulseaudio=7.1-2~bpo8+1 pulseaudio-utils=7.1-2~bpo8+1 \
 # Install dbus for python
 apt-get install python-dbus -y
 # Install espeak
-apt-get install -qy espeak
+### apt-get install -qy espeak
 
 # Create users and priviliges for Bluez-Pulse Audio interaction - most should already exist
 addgroup --system pulse
@@ -89,8 +89,8 @@ sudo chmod 755 /usr/local/bin/bluez-udev
 sudo cp usr/local/bin/simple-agent.autotrust /usr/local/bin
 sudo chmod 755 /usr/local/bin/simple-agent.autotrust
 
-sudo cp usr/local/bin/say.sh /usr/local/bin
-sudo chmod 755 /usr/local/bin/say.sh
+### sudo cp usr/local/bin/say.sh /usr/local/bin
+### sudo chmod 755 /usr/local/bin/say.sh
 
 sudo cp usr/local/bin/bluezutils.py /usr/local/bin
 
