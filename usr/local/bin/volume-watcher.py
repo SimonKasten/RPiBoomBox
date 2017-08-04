@@ -13,9 +13,9 @@ try:
 except ImportError:
     from gi.repository import GObject as gobject
 
-LOG_LEVEL = logging.INFO
-#LOG_LEVEL = logging.DEBUG
-LOG_FILE = "/dev/log"
+#LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
+LOG_FILE = "/home/pi/testtesttest.log"
 LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 BLUEZ_DEV = "org.bluez.MediaTransport1"
 
